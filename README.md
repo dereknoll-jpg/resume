@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL Vite prints, edit the resume in the left panel, and use **Export PDF** to open the browser print dialog. Choose **Save as PDF**.
+Open the local URL Vite prints, edit the resume in the left panel, and use **Export PDF** to open the browser print dialog. Choose **Save as PDF**. Use **Export Word** to download a Word-openable `.doc` version.
 
 ## Keep Updating
 

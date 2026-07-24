@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   --ink: #172029;
   --muted: #5f6873;
   --line: #d7dde3;
@@ -13,6 +13,8 @@
 
 * {
   box-sizing: border-box;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -67,6 +69,13 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
 }
 
 .editor h1,
@@ -153,10 +162,14 @@ textarea {
 .sheet {
   background: var(--paper);
   box-shadow: 0 14px 50px rgba(23, 32, 41, 0.18);
+  font-family: Arial, Helvetica, sans-serif;
+  font-kerning: normal;
+  font-synthesis: none;
   margin: 0 auto;
   max-width: 8.5in;
   min-height: 11in;
   padding: 0.55in;
+  -webkit-font-smoothing: antialiased;
 }
 
 .resume-header {
@@ -178,7 +191,7 @@ textarea {
 .resume-header p {
   color: var(--accent-dark);
   font-size: 12pt;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0.15in 0 0;
 }
 
@@ -248,7 +261,7 @@ textarea {
 .job-heading span {
   color: var(--accent-dark);
   font-size: 8.6pt;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   text-align: right;
 }
@@ -303,7 +316,7 @@ li {
   border-top: 2px solid var(--accent);
   color: var(--accent-dark);
   font-size: 9pt;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
   margin: 0.18in 0 0;
   padding-top: 0.1in;
@@ -334,6 +347,11 @@ li {
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   body {
     background: #fff;
   }
@@ -350,6 +368,9 @@ li {
 
   .sheet {
     box-shadow: none;
+    color: #172029;
+    font-family: Arial, Helvetica, sans-serif;
+    font-synthesis: none;
     height: 11in;
     max-width: none;
     min-height: auto;

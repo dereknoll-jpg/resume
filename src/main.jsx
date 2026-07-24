@@ -9,6 +9,118 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function resumeWordHtml(resume) {
+  const contact = [resume.contact.location, resume.contact.phone, resume.contact.email, resume.contact.linkedin].filter(Boolean);
+  const experience = resume.experience
+    .map((job) => `
+      <div class="job">
+        <table class="job-heading">
+          <tr>
+            <td>
+              <h3>${escapeHtml(job.role)}</h3>
+              <p>${escapeHtml([job.company, job.location].filter(Boolean).join(" | "))}</p>
+            </td>
+            <td class="dates">${escapeHtml(job.dates)}</td>
+          </tr>
+        </table>
+        <ul>${job.bullets.filter(Boolean).map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join("")}</ul>
+      </div>
+    `)
+    .join("");
+  const skills = resume.skills
+    .map((skill) => `
+      <div class="skill">
+        <h3>${escapeHtml(skill.label)}</h3>
+        <p>${escapeHtml(skill.items)}</p>
+      </div>
+    `)
+    .join("");
+  const additional = resume.additional.filter(Boolean).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>${escapeHtml(resume.name)} Resume</title>
+    <style>
+      @page WordSection1 { size: 8.5in 11in; margin: 0.45in; }
+      body { font-family: Arial, Helvetica, sans-serif; color: #172029; font-size: 8.8pt; line-height: 1.28; }
+      div.WordSection1 { page: WordSection1; }
+      h1 { font-size: 30pt; line-height: 0.95; margin: 0; text-transform: uppercase; }
+      h2 { color: #134f59; font-size: 9pt; letter-spacing: 1px; margin: 12pt 0 6pt; text-transform: uppercase; }
+      h3 { font-size: 9.5pt; margin: 0; }
+      p { margin: 0; }
+      ul { margin: 4pt 0 0 14pt; padding: 0; }
+      li { margin-bottom: 2.5pt; }
+      .top { border-bottom: 3pt solid #1d6f7a; margin-bottom: 14pt; padding-bottom: 12pt; width: 100%; }
+      .headline { color: #134f59; font-size: 10.5pt; font-weight: bold; margin-top: 7pt; }
+      .contact { color: #5f6873; font-size: 8pt; line-height: 1.35; text-align: right; vertical-align: bottom; }
+      .profile { background: #f7f0e4; border-left: 7pt solid #1d6f7a; margin-bottom: 14pt; padding: 8pt 10pt; }
+      .layout { width: 100%; }
+      .main { vertical-align: top; width: 68%; padding-right: 16pt; }
+      .side { border-left: 1pt solid #d7dde3; vertical-align: top; width: 32%; padding-left: 14pt; }
+      .job { margin-bottom: 10pt; }
+      .job-heading { width: 100%; }
+      .job-heading p, .skill p, .additional { color: #5f6873; }
+      .dates { color: #134f59; font-size: 8pt; font-weight: bold; text-align: right; vertical-align: top; width: 72pt; }
+      .skill { margin-bottom: 8pt; }
+      .skill h3 { font-size: 8.3pt; }
+      .skill p { font-size: 7.8pt; line-height: 1.22; }
+      .motto { border-top: 2pt solid #1d6f7a; color: #134f59; font-weight: bold; margin-top: 10pt; padding-top: 7pt; }
+    </style>
+  </head>
+  <body>
+    <div class="WordSection1">
+      <table class="top">
+        <tr>
+          <td>
+            <h1>${escapeHtml(resume.name)}</h1>
+            <p class="headline">${escapeHtml(resume.headline)}</p>
+          </td>
+          <td class="contact">${contact.map(escapeHtml).join("<br>")}</td>
+        </tr>
+      </table>
+      <div class="profile">
+        <h2>Profile</h2>
+        <p>${escapeHtml(resume.profile)}</p>
+      </div>
+      <table class="layout">
+        <tr>
+          <td class="main">
+            <h2>Professional Experience</h2>
+            ${experience}
+          </td>
+          <td class="side">
+            <h2>Skills</h2>
+            ${skills}
+            <h2>Additional</h2>
+            <ul class="additional">${additional}</ul>
+            ${resume.motto ? `<p class="motto">"${escapeHtml(resume.motto)}"</p>` : ""}
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>`;
+}
+
 function setPath(source, path, value) {
   const next = clone(source);
   let cursor = next;
@@ -50,7 +162,7 @@ function ArrayEditor({ title, items, onChange, renderItem, newItem }) {
   );
 }
 
-function Editor({ resume, setResume, onExportJson, onImportJson, onReset }) {
+function Editor({ resume, setResume, onExportJson, onExportWord, onImportJson, onReset }) {
   const fileInputRef = useRef(null);
 
   return (
@@ -60,7 +172,10 @@ function Editor({ resume, setResume, onExportJson, onImportJson, onReset }) {
           <p className="eyebrow">Resume Workspace</p>
           <h1>Edit Derek's Resume</h1>
         </div>
-        <button type="button" onClick={() => window.print()}>Export PDF</button>
+        <div className="export-actions">
+          <button type="button" onClick={() => window.print()}>Export PDF</button>
+          <button type="button" onClick={onExportWord}>Export Word</button>
+        </div>
       </div>
 
       <section className="editor-section">
@@ -227,12 +342,13 @@ function App() {
 
   function exportJson() {
     const blob = new Blob([JSON.stringify(resume, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "derek-noll-resume-data.json";
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, "derek-noll-resume-data.json");
+  }
+
+  function exportWord() {
+    const html = resumeWordHtml(resume);
+    const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+    downloadBlob(blob, "Derek_Noll_Resume.doc");
   }
 
   async function importJson(event) {
@@ -251,7 +367,14 @@ function App() {
 
   return (
     <div className="app">
-      <Editor resume={resume} setResume={setResume} onExportJson={exportJson} onImportJson={importJson} onReset={resetResume} />
+      <Editor
+        resume={resume}
+        setResume={setResume}
+        onExportJson={exportJson}
+        onExportWord={exportWord}
+        onImportJson={importJson}
+        onReset={resetResume}
+      />
       <div className="preview-wrap">
         <ResumePreview resume={resume} />
       </div>
